@@ -9,9 +9,23 @@ type Props = {
   editable?: boolean;
   onChange?: (next: PlannedExercise) => void;
   onRemove?: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
 };
 
-export function ExerciseCard({ exercise, index, editable, onChange, onRemove }: Props) {
+export function ExerciseCard({
+  exercise,
+  index,
+  editable,
+  onChange,
+  onRemove,
+  onMoveUp,
+  onMoveDown,
+  canMoveUp,
+  canMoveDown,
+}: Props) {
   const { state } = useApp();
   const gifUrl = exercise.gifUrl ?? state.gifMap[exercise.exerciseId];
 
