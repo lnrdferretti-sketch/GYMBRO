@@ -165,12 +165,16 @@ export function AllenamentoTab() {
 
         {day.exercises.map((ex, i) => (
           <ExerciseCard
-            key={ex.exerciseId + i}
+            key={ex.exerciseId + "-" + i}
             exercise={ex}
             index={i}
             editable={editing}
             onChange={(next) => updateExercise(i, next)}
             onRemove={() => removeExercise(i)}
+            onMoveUp={() => moveExercise(i, -1)}
+            onMoveDown={() => moveExercise(i, 1)}
+            canMoveUp={i > 0}
+            canMoveDown={i < day.exercises.length - 1}
           />
         ))}
 
