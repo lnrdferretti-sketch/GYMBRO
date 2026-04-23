@@ -1,5 +1,5 @@
-import type { AppState } from "./types";
-import { DEFAULT_EXTRAS } from "./types";
+import type { AppState, DayOfWeek } from "./types";
+import { DEFAULT_EXTRAS, DAYS_OF_WEEK } from "./types";
 
 const KEY = "gymbro_state_v2";
 
@@ -18,9 +18,22 @@ export function loadState(): AppState {
     const raw = localStorage.getItem(KEY);
     if (!raw) return initialState;
     const parsed = JSON.parse(raw);
+    // Backfill trainingDays for profiles saved before this field existed
+    let profile = parsed.profile ?? null;
+    if (profile && !Array.isArray(profile.trainingDays)) {
+      const presets: Record<number, DayOfWeek[]> = {
+        2: ["Lunedì", "Giovedì"],
+        3: ["Lunedì", "Mercoledì", "Venerdì"],
+        4: ["Lunedì", "Martedì", "Giovedì", "Venerdì"],
+        5: ["Lunedì", "Martedì", "Mercoledì", "Venerdì", "Sabato"],
+        6: ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"],
+      };
+      profile = { ...profile, trainingDays: presets[profile.daysPerWeek] ?? DAYS_OF_WEEK.slice(0, profile.daysPerWeek ?? 3) };
+    }
     return {
       ...initialState,
       ...parsed,
+      profile,
       maxes: {
         ...initialState.maxes,
         ...parsed.maxes,
