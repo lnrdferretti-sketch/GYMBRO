@@ -1,6 +1,7 @@
 import { EXERCISES, type Exercise, type MuscleGroup } from "./exercises";
 import type { Profile, WeeklyPlan, DayPlan, PlannedExercise, DayOfWeek } from "./types";
 import { DAYS_OF_WEEK } from "./types";
+import { loadRemoteDb, pickFromDb, type DbExercise } from "./exerciseDb";
 
 function pickN<T>(arr: T[], n: number): T[] {
   const shuffled = [...arr].sort(() => Math.random() - 0.5);
