@@ -50,17 +50,20 @@ export function BenessereTab() {
 
   const newWeightNum = Number(newWeight);
   const newWeightOk = newWeight !== "" && newWeightNum >= 45 && newWeightNum <= 150;
+  const newDateOk = newWeightDate >= tomorrowIso;
+  const canSaveWeight = newWeightOk && newDateOk;
 
   const addWeight = () => {
-    if (!newWeightOk) return;
-    setState((s) => ({
-      ...s,
-      wellness: {
-        ...s.wellness,
-        weights: [...s.wellness.weights, { date: todayKey(), value: newWeightNum }],
-      },
-    }));
+    if (!canSaveWeight) return;
+    setState((s) => {
+      const next = [
+        ...s.wellness.weights,
+        { date: newWeightDate, value: newWeightNum },
+      ].sort((a, b) => a.date.localeCompare(b.date));
+      return { ...s, wellness: { ...s.wellness, weights: next } };
+    });
     setNewWeight("");
+    setNewWeightDate(tomorrowIso);
   };
 
   const deleteWeight = (i: number) => {
