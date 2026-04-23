@@ -139,32 +139,56 @@ export function BenessereTab() {
         </div>
       </div>
 
-      {/* Weight input */}
+      {/* Weight input — for planning future weigh-ins / goals */}
       <div className="bg-card/80 border border-border rounded-2xl p-4 shadow-card space-y-3">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">Inserisci peso di oggi</p>
-        <div className="flex gap-2">
-          <input
-            type="number"
-            inputMode="decimal"
-            value={newWeight}
-            onChange={(e) => setNewWeight(e.target.value.replace(/[^0-9.]/g, ""))}
-            placeholder="es. 72.5"
-            className="flex-1 bg-input/60 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-          <span className="self-center text-sm text-muted-foreground">kg</span>
-          <button
-            disabled={!newWeightOk}
-            onClick={addWeight}
-            className={cn(
-              "px-4 rounded-xl font-bold text-sm active:scale-95 transition-all",
-              newWeightOk ? "bg-gradient-primary shadow-glow" : "bg-muted text-muted-foreground"
-            )}
-          >
-            Salva Peso
-          </button>
+        <div>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Pianifica un peso</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            Imposta un obiettivo per una data futura.
+          </p>
         </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Peso (kg)</label>
+            <input
+              type="number"
+              inputMode="decimal"
+              value={newWeight}
+              onChange={(e) => setNewWeight(e.target.value.replace(/[^0-9.]/g, ""))}
+              placeholder="es. 72.5"
+              className="w-full mt-1 bg-input/60 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Data</label>
+            <input
+              type="date"
+              value={newWeightDate}
+              min={tomorrowIso}
+              onChange={(e) => {
+                const v = e.target.value;
+                // Reject any value that is today or earlier
+                if (v && v >= tomorrowIso) setNewWeightDate(v);
+              }}
+              className="w-full mt-1 bg-input/60 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+        </div>
+        <button
+          disabled={!canSaveWeight}
+          onClick={addWeight}
+          className={cn(
+            "w-full py-3 rounded-xl font-bold text-sm active:scale-95 transition-all min-h-[44px]",
+            canSaveWeight ? "bg-gradient-primary shadow-glow" : "bg-muted text-muted-foreground"
+          )}
+        >
+          Salva Peso
+        </button>
         {newWeight !== "" && !newWeightOk && (
           <p className="text-xs text-primary">Inserisci un valore tra 45 e 150 kg</p>
+        )}
+        {!newDateOk && (
+          <p className="text-xs text-primary">Scegli una data successiva a oggi</p>
         )}
 
         {/* Chart */}
