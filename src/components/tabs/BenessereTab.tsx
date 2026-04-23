@@ -10,7 +10,14 @@ import { motion } from "framer-motion";
 
 export function BenessereTab() {
   const { state, setState } = useApp();
+  // Tomorrow's ISO date, used as the minimum allowed value for planning future weigh-ins
+  const tomorrowIso = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0, 10);
+  }, []);
   const [newWeight, setNewWeight] = useState("");
+  const [newWeightDate, setNewWeightDate] = useState(tomorrowIso);
   const [steps, setSteps] = useState(state.wellness.steps[todayKey()]?.toString() ?? "");
   const [kcal, setKcal] = useState(state.wellness.kcal[todayKey()]?.toString() ?? "");
   const last7 = useMemo(() => lastNDays(7), []);
