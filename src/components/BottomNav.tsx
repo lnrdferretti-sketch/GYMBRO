@@ -7,7 +7,7 @@ const TABS: { key: TabKey; icon: string; label: string }[] = [
   { key: "oggi", icon: "🎯", label: "Oggi" },
   { key: "allenamento", icon: "🏋️", label: "Scheda" },
   { key: "benessere", icon: "🌿", label: "Benessere" },
-  { key: "statistiche", icon: "📈", label: "Stats" },
+  { key: "statistiche", icon: "📈", label: "Massimali" },
   { key: "impostazioni", icon: "⚙️", label: "Setup" },
 ];
 
