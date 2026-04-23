@@ -44,7 +44,7 @@ function NumberInput({
 }
 
 export function Onboarding() {
-  const { setProfile } = useApp();
+  const { setProfile, generating } = useApp();
   const [step, setStep] = useState(0);
 
   const [coachName, setCoachName] = useState("GYMBRO");
@@ -104,7 +104,7 @@ export function Onboarding() {
       focus,
       background: "hero",
     };
-    setProfile(p);
+    void setProfile(p);
   };
 
   return (
@@ -342,14 +342,14 @@ export function Onboarding() {
           </button>
         ) : (
           <button
-            disabled={!step2Ok}
+            disabled={!step2Ok || generating}
             onClick={finish}
             className={cn(
               "flex-[2] py-3.5 rounded-xl font-bold transition-all active:scale-95",
-              step2Ok ? "bg-gradient-primary shadow-glow" : "bg-muted text-muted-foreground"
+              step2Ok && !generating ? "bg-gradient-primary shadow-glow" : "bg-muted text-muted-foreground"
             )}
           >
-            Genera Scheda 🔥
+            {generating ? "Generazione…" : "Genera Scheda 🔥"}
           </button>
         )}
       </div>
