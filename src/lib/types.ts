@@ -20,6 +20,7 @@ export type Profile = {
   targetWeight: number;
   goal: Goal;
   daysPerWeek: 2 | 3 | 4 | 5 | 6;
+  trainingDays: DayOfWeek[]; // length === daysPerWeek, ordered by week
   focus: Record<MuscleGroup, boolean>;
   background: string;
 };
