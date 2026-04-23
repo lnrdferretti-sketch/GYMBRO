@@ -6,10 +6,11 @@ import { generatePlan } from "@/lib/engine";
 
 type Ctx = {
   state: AppState;
+  generating: boolean;
   setState: (updater: (s: AppState) => AppState) => void;
-  setProfile: (p: Profile) => void;
-  updateTrainingFrequency: (daysPerWeek: 2 | 3 | 4 | 5 | 6, trainingDays: DayOfWeek[]) => void;
-  regeneratePlan: () => void;
+  setProfile: (p: Profile) => Promise<void>;
+  updateTrainingFrequency: (daysPerWeek: 2 | 3 | 4 | 5 | 6, trainingDays: DayOfWeek[]) => Promise<void>;
+  regeneratePlan: () => Promise<void>;
   resetAll: () => void;
 };
 
@@ -18,6 +19,7 @@ const AppCtx = createContext<Ctx | null>(null);
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setStateRaw] = useState<AppState>(initialState);
   const [hydrated, setHydrated] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
     setStateRaw(loadState());
