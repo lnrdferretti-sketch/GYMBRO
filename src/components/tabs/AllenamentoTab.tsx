@@ -54,6 +54,8 @@ export function AllenamentoTab() {
       return { ...s, plan: { ...s.plan, days } };
     });
   };
+
+  const addExerciseFromMuscle = (muscle: MuscleGroup) => {
     const pool = EXERCISES.filter((e) => e.muscle === muscle);
     const ex = pool[Math.floor(Math.random() * pool.length)];
     if (!ex) return;
