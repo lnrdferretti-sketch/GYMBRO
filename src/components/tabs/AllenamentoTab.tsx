@@ -40,7 +40,20 @@ export function AllenamentoTab() {
     });
   };
 
-  const addExerciseFromMuscle = (muscle: MuscleGroup) => {
+  const moveExercise = (idx: number, direction: -1 | 1) => {
+    setState((s) => {
+      if (!s.plan) return s;
+      const days = s.plan.days.map((d, i) => {
+        if (i !== active) return d;
+        const next = [...d.exercises];
+        const target = idx + direction;
+        if (target < 0 || target >= next.length) return d;
+        [next[idx], next[target]] = [next[target], next[idx]];
+        return { ...d, exercises: next };
+      });
+      return { ...s, plan: { ...s.plan, days } };
+    });
+  };
     const pool = EXERCISES.filter((e) => e.muscle === muscle);
     const ex = pool[Math.floor(Math.random() * pool.length)];
     if (!ex) return;
