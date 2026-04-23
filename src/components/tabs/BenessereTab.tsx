@@ -34,11 +34,9 @@ export function BenessereTab() {
   if (!profile) return null;
 
   const water = state.wellness.water[todayKey()] ?? 0;
-  const profile = state.profile;
 
   const start = profile.currentWeight;
   const target = profile.targetWeight;
-  const latest = state.wellness.weights[state.wellness.weights.length - 1]?.value ?? start;
   const totalDelta = Math.abs(target - start) || 1;
   const doneDelta = Math.abs(latest - start);
   const progress = Math.min(100, Math.round((doneDelta / totalDelta) * 100));
@@ -88,18 +86,6 @@ export function BenessereTab() {
   const weightChartData = state.wellness.weights.length > 0
     ? state.wellness.weights.map((w) => ({ date: shortDate(w.date), peso: w.value }))
     : [{ date: "—", peso: start }];
-
-  const last7 = useMemo(() => lastNDays(7), []);
-  // Estimate BMR (Mifflin-St Jeor approx) — fallback when user hasn't logged kcal
-  const bmr = useMemo(() => {
-    const w = latest;
-    const h = 170; // assumed avg
-    const a = profile.age;
-    const base = profile.gender === "Maschio"
-      ? 10 * w + 6.25 * h - 5 * a + 5
-      : 10 * w + 6.25 * h - 5 * a - 161;
-    return Math.round(base);
-  }, [latest, profile.age, profile.gender]);
 
   const stepsChartData = last7.map((d) => ({
     day: shortDate(d).split("-")[0],
