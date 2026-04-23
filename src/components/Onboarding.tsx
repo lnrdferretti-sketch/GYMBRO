@@ -84,7 +84,8 @@ export function Onboarding() {
 
   const step0Ok = nameOk;
   const step1Ok = !!gender && ageOk && cwOk && twOk && !!goal;
-  const step2Ok = days !== 0 && focusOk;
+  const daysOk = days !== 0 && trainingDays.length === days;
+  const step2Ok = daysOk && focusOk;
 
   const finish = () => {
     if (!step0Ok || !step1Ok || !step2Ok) return;
@@ -97,6 +98,9 @@ export function Onboarding() {
       targetWeight: twNum,
       goal: goal as Goal,
       daysPerWeek: days as 2 | 3 | 4 | 5 | 6,
+      trainingDays: [...trainingDays].sort(
+        (a, b) => DAYS_OF_WEEK.indexOf(a) - DAYS_OF_WEEK.indexOf(b)
+      ),
       focus,
       background: "hero",
     };
