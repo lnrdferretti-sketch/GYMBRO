@@ -34,6 +34,9 @@ export type PlannedExercise = {
   restSec: number; // seconds
   type: "strength" | "cardio" | "core";
   gifUrl?: string;
+  // Up to two relative image paths from free-exercise-db (e.g. "Squat/0.jpg").
+  // Only these tiny strings are persisted — never the full DB row.
+  images?: string[];
 };
 
 export type DayPlan = {

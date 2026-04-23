@@ -9,7 +9,7 @@ import { DAYS_OF_WEEK, type DayOfWeek, type PlannedExercise } from "@/lib/types"
 const MUSCLES: MuscleGroup[] = ["Petto", "Schiena", "Gambe", "Glutei", "Spalle", "Braccia", "Addominali", "Cardio"];
 
 export function AllenamentoTab() {
-  const { state, setState, regeneratePlan } = useApp();
+  const { state, setState, regeneratePlan, generating } = useApp();
   const [active, setActive] = useState(0);
   const [editing, setEditing] = useState(false);
   const [confirmRegen, setConfirmRegen] = useState(false);
@@ -101,16 +101,17 @@ export function AllenamentoTab() {
             {editing ? "✓ Fine" : "✏️ Modifica"}
           </button>
           <button
+            disabled={generating}
             onClick={() => {
-              if (confirmRegen) { regeneratePlan(); setConfirmRegen(false); setEditing(false); }
+              if (confirmRegen) { void regeneratePlan(); setConfirmRegen(false); setEditing(false); }
               else setConfirmRegen(true);
             }}
             className={cn(
               "px-3 py-2 rounded-xl text-xs font-bold active:scale-95 transition-all",
-              confirmRegen ? "bg-primary shadow-glow" : "bg-secondary/80"
+              generating ? "bg-muted text-muted-foreground" : confirmRegen ? "bg-primary shadow-glow" : "bg-secondary/80"
             )}
           >
-            {confirmRegen ? "Conferma 🔥" : "Rigenera"}
+            {generating ? "…" : confirmRegen ? "Conferma 🔥" : "Rigenera"}
           </button>
         </div>
       </div>

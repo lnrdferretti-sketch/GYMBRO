@@ -6,10 +6,11 @@ import { generatePlan } from "@/lib/engine";
 
 type Ctx = {
   state: AppState;
+  generating: boolean;
   setState: (updater: (s: AppState) => AppState) => void;
-  setProfile: (p: Profile) => void;
-  updateTrainingFrequency: (daysPerWeek: 2 | 3 | 4 | 5 | 6, trainingDays: DayOfWeek[]) => void;
-  regeneratePlan: () => void;
+  setProfile: (p: Profile) => Promise<void>;
+  updateTrainingFrequency: (daysPerWeek: 2 | 3 | 4 | 5 | 6, trainingDays: DayOfWeek[]) => Promise<void>;
+  regeneratePlan: () => Promise<void>;
   resetAll: () => void;
 };
 
@@ -18,6 +19,7 @@ const AppCtx = createContext<Ctx | null>(null);
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setStateRaw] = useState<AppState>(initialState);
   const [hydrated, setHydrated] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
     setStateRaw(loadState());
@@ -30,30 +32,54 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const setState = (u: (s: AppState) => AppState) => setStateRaw((s) => u(s));
 
-  const setProfile = (p: Profile) => {
-    const plan = generatePlan(p);
-    setStateRaw((s) => ({ ...s, profile: p, plan, onboarded: true }));
+  const setProfile = async (p: Profile) => {
+    setGenerating(true);
+    try {
+      const plan = await generatePlan(p);
+      setStateRaw((s) => ({ ...s, profile: p, plan, onboarded: true }));
+    } finally {
+      setGenerating(false);
+    }
   };
 
-  const regeneratePlan = () => {
-    setStateRaw((s) => (s.profile ? { ...s, plan: generatePlan(s.profile) } : s));
+  const regeneratePlan = async () => {
+    const profile = state.profile;
+    if (!profile) return;
+    setGenerating(true);
+    try {
+      const plan = await generatePlan(profile);
+      setStateRaw((s) => ({ ...s, plan }));
+    } finally {
+      setGenerating(false);
+    }
   };
 
-  const updateTrainingFrequency = (daysPerWeek: 2 | 3 | 4 | 5 | 6, trainingDays: DayOfWeek[]) => {
-    setStateRaw((s) => {
-      if (!s.profile) return s;
-      const sortedDays = [...trainingDays].sort(
-        (a, b) => DAYS_OF_WEEK.indexOf(a) - DAYS_OF_WEEK.indexOf(b)
-      );
-      const nextProfile: Profile = { ...s.profile, daysPerWeek, trainingDays: sortedDays };
-      // If day count changed, the split needs full regen; otherwise just remap assignedDay
-      // to preserve user-edited exercises.
-      if (s.plan && s.plan.days.length === daysPerWeek) {
-        const days = s.plan.days.map((d, i) => ({ ...d, assignedDay: sortedDays[i] }));
-        return { ...s, profile: nextProfile, plan: { ...s.plan, days } };
-      }
-      return { ...s, profile: nextProfile, plan: generatePlan(nextProfile) };
-    });
+  const updateTrainingFrequency = async (
+    daysPerWeek: 2 | 3 | 4 | 5 | 6,
+    trainingDays: DayOfWeek[]
+  ) => {
+    const profile = state.profile;
+    if (!profile) return;
+    const sortedDays = [...trainingDays].sort(
+      (a, b) => DAYS_OF_WEEK.indexOf(a) - DAYS_OF_WEEK.indexOf(b)
+    );
+    const nextProfile: Profile = { ...profile, daysPerWeek, trainingDays: sortedDays };
+
+    // If day count is unchanged we can simply remap assignedDay and keep
+    // every user-edited exercise intact. Otherwise the split must be regenerated.
+    if (state.plan && state.plan.days.length === daysPerWeek) {
+      const days = state.plan.days.map((d, i) => ({ ...d, assignedDay: sortedDays[i] }));
+      setStateRaw((s) => ({ ...s, profile: nextProfile, plan: { ...s.plan!, days } }));
+      return;
+    }
+
+    setGenerating(true);
+    try {
+      const plan = await generatePlan(nextProfile);
+      setStateRaw((s) => ({ ...s, profile: nextProfile, plan }));
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const resetAll = () => {
@@ -61,8 +87,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const value = useMemo(
-    () => ({ state, setState, setProfile, updateTrainingFrequency, regeneratePlan, resetAll }),
-    [state]
+    () => ({ state, generating, setState, setProfile, updateTrainingFrequency, regeneratePlan, resetAll }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [state, generating]
   );
   return <AppCtx.Provider value={value}>{hydrated ? children : null}</AppCtx.Provider>;
 }

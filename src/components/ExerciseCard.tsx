@@ -1,6 +1,8 @@
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import { useApp } from "@/state/AppContext";
 import type { PlannedExercise } from "@/lib/types";
+import { dbImageUrl } from "@/lib/exerciseDb";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -29,7 +31,64 @@ export function ExerciseCard({
   const { state } = useApp();
   const gifUrl = exercise.gifUrl ?? state.gifMap[exercise.exerciseId];
 
+  // Flip-book animation: when the exercise has 2 images from free-exercise-db,
+  // toggle between them every 1000ms to simulate the movement.
+  const dbImages = exercise.images?.length ? exercise.images.map(dbImageUrl) : [];
+  const [frame, setFrame] = useState(0);
+  const [imgError, setImgError] = useState(false);
+  useEffect(() => {
+    setImgError(false);
+    setFrame(0);
+    if (dbImages.length < 2) return;
+    const id = window.setInterval(() => setFrame((f) => (f === 0 ? 1 : 0)), 1000);
+    return () => window.clearInterval(id);
+    // dbImages is derived from exercise.images so we depend on the joined string
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exercise.images?.join("|")]);
+
   const update = (patch: Partial<PlannedExercise>) => onChange?.({ ...exercise, ...patch });
+
+  // Choose what to show in the media container, in priority order:
+  // 1. user-supplied GIF, 2. flip-book frames from DB, 3. branded placeholder
+  const renderMedia = () => {
+    if (gifUrl) {
+      return (
+        <img
+          src={gifUrl}
+          alt={exercise.name}
+          className="w-full h-full object-cover"
+          draggable={false}
+        />
+      );
+    }
+    if (dbImages.length > 0 && !imgError) {
+      return (
+        <>
+          {dbImages.map((src, i) => (
+            <img
+              key={src}
+              src={src}
+              alt={exercise.name}
+              draggable={false}
+              onError={() => setImgError(true)}
+              className={cn(
+                "absolute inset-0 w-full h-full object-cover transition-opacity duration-200",
+                dbImages.length === 1 || i === frame ? "opacity-100" : "opacity-0"
+              )}
+            />
+          ))}
+        </>
+      );
+    }
+    return (
+      <div className="text-center px-1">
+        <div className="text-xl">🎞️</div>
+        <div className="text-[8px] text-muted-foreground mt-0.5 leading-tight">
+          Inserire Animazione GIF
+        </div>
+      </div>
+    );
+  };
 
   return (
     <motion.div
@@ -39,15 +98,8 @@ export function ExerciseCard({
       className="bg-card/80 border border-border rounded-2xl p-4 shadow-card"
     >
       <div className="flex gap-3">
-        <div className="w-20 h-20 rounded-xl bg-gradient-navy border border-border flex items-center justify-center flex-shrink-0 overflow-hidden">
-          {gifUrl ? (
-            <img src={gifUrl} alt={exercise.name} className="w-full h-full object-cover" draggable={false} />
-          ) : (
-            <div className="text-center px-1">
-              <div className="text-xl">🎞️</div>
-              <div className="text-[8px] text-muted-foreground mt-0.5 leading-tight">Inserire Animazione GIF</div>
-            </div>
-          )}
+        <div className="relative w-20 h-20 aspect-square rounded-xl bg-gradient-navy border border-border flex items-center justify-center flex-shrink-0 overflow-hidden">
+          {renderMedia()}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
