@@ -1,26 +1,32 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { AppProvider, useApp } from "@/state/AppContext";
+import { PhoneShell } from "@/components/PhoneShell";
+import { Onboarding } from "@/components/Onboarding";
+import { MainApp } from "@/components/MainApp";
 
 export const Route = createFileRoute("/")({
   component: Index,
+  head: () => ({
+    meta: [
+      { title: "GYMBRO — Il tuo AI Coach Personale" },
+      { name: "description", content: "Crea il tuo coach AI personalizzato. Schede di allenamento generate per il tuo obiettivo: ipertrofia, forza, dimagrimento." },
+    ],
+  }),
 });
 
-// IMPORTANT: Replace this placeholder. For sites with multiple pages (About, Services, Contact, etc.),
-// create separate route files (about.tsx, services.tsx, contact.tsx) — don't put all pages in this file.
-function PlaceholderIndex() {
+function Inner() {
+  const { state } = useApp();
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <PhoneShell background={state.profile?.background ?? "hero"}>
+      {state.onboarded && state.profile ? <MainApp /> : <Onboarding />}
+    </PhoneShell>
   );
 }
 
 function Index() {
-  return <PlaceholderIndex />;
+  return (
+    <AppProvider>
+      <Inner />
+    </AppProvider>
+  );
 }
