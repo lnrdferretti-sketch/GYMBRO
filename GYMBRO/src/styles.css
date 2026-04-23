@@ -1,0 +1,138 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-navy: var(--navy);
+  --color-navy-deep: var(--navy-deep);
+  --color-electric: var(--electric);
+  --color-electric-glow: var(--electric-glow);
+  --color-success: var(--success);
+}
+
+:root {
+  --radius: 0.875rem;
+
+  /* Dark by default — Navy + Electric Red */
+  --background: oklch(0.12 0.02 260);
+  --foreground: oklch(0.98 0.005 260);
+
+  --card: oklch(0.16 0.025 260);
+  --card-foreground: oklch(0.98 0.005 260);
+
+  --popover: oklch(0.16 0.025 260);
+  --popover-foreground: oklch(0.98 0.005 260);
+
+  --primary: oklch(0.62 0.24 25);            /* Electric Red */
+  --primary-foreground: oklch(0.99 0 0);
+
+  --secondary: oklch(0.22 0.04 260);
+  --secondary-foreground: oklch(0.98 0.005 260);
+
+  --muted: oklch(0.20 0.03 260);
+  --muted-foreground: oklch(0.70 0.02 260);
+
+  --accent: oklch(0.30 0.10 260);
+  --accent-foreground: oklch(0.98 0.005 260);
+
+  --destructive: oklch(0.62 0.24 25);
+  --destructive-foreground: oklch(0.99 0 0);
+
+  --border: oklch(0.25 0.03 260);
+  --input: oklch(0.22 0.03 260);
+  --ring: oklch(0.62 0.24 25);
+
+  --navy: oklch(0.30 0.10 260);
+  --navy-deep: oklch(0.18 0.06 260);
+  --electric: oklch(0.62 0.24 25);
+  --electric-glow: oklch(0.70 0.22 25);
+  --success: oklch(0.72 0.18 145);
+
+  --gradient-primary: linear-gradient(135deg, oklch(0.62 0.24 25), oklch(0.45 0.18 18));
+  --gradient-navy: linear-gradient(135deg, oklch(0.22 0.08 260), oklch(0.14 0.04 260));
+  --gradient-hero: linear-gradient(160deg, oklch(0.30 0.10 260) 0%, oklch(0.14 0.04 260) 50%, oklch(0.18 0.10 25) 100%);
+
+  --shadow-glow: 0 10px 40px -10px oklch(0.62 0.24 25 / 0.5);
+  --shadow-card: 0 8px 24px -8px oklch(0 0 0 / 0.5);
+
+  color-scheme: dark;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body {
+    background-color: #000;
+    color: var(--color-foreground);
+    user-select: none;
+    -webkit-user-select: none;
+    overscroll-behavior-y: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: manipulation;
+  }
+
+  /* Hide scrollbars everywhere */
+  * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  *::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  input, textarea {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+
+  button {
+    min-height: 44px;
+  }
+}
+
+@layer utilities {
+  .bg-gradient-primary { background-image: var(--gradient-primary); }
+  .bg-gradient-navy { background-image: var(--gradient-navy); }
+  .bg-gradient-hero { background-image: var(--gradient-hero); }
+  .shadow-glow { box-shadow: var(--shadow-glow); }
+  .shadow-card { box-shadow: var(--shadow-card); }
+  .safe-top { padding-top: env(safe-area-inset-top); }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+  .text-electric { color: var(--electric); }
+  .glass {
+    background: oklch(0.18 0.03 260 / 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+}
