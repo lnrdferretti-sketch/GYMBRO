@@ -56,7 +56,14 @@ export function defaultTrainingDays(n: number): DayOfWeek[] {
   return defaultDays(n);
 }
 
-export function generatePlan(profile: Profile): WeeklyPlan {
+/**
+ * Generate a weekly plan, augmenting picks from our local catalog with
+ * names + image paths from the open-source free-exercise-db when available.
+ *
+ * The remote DB is fetched lazily and held in module memory only — only the
+ * tiny `images` paths from the chosen exercises end up in localStorage.
+ */
+export async function generatePlan(profile: Profile): Promise<WeeklyPlan> {
   const focus = (Object.entries(profile.focus)
     .filter(([, v]) => v)
     .map(([k]) => k) as MuscleGroup[]);
@@ -66,10 +73,14 @@ export function generatePlan(profile: Profile): WeeklyPlan {
   const userDays = profile.trainingDays && profile.trainingDays.length === profile.daysPerWeek
     ? profile.trainingDays
     : defaultDays(profile.daysPerWeek);
-  // Sort by week order (Lunedì → Domenica) so the schedule reads naturally
   const dayAssignments = [...userDays].sort(
     (a, b) => DAYS_OF_WEEK.indexOf(a) - DAYS_OF_WEEK.indexOf(b)
   );
+
+  // Load DB once — never throws; returns [] on failure so we degrade to local catalog
+  const db = await loadRemoteDb();
+  // Track DB ids already used so the same exercise never appears twice in a week
+  const usedDbIds = new Set<string>();
 
   const days: DayPlan[] = splits.map((muscles, idx) => {
     const exercises: PlannedExercise[] = [];
@@ -85,32 +96,69 @@ export function generatePlan(profile: Profile): WeeklyPlan {
     });
 
     sortedMuscles.forEach((m) => {
-      const pool = EXERCISES.filter((e) => e.muscle === m);
       let count = 3;
       if (m === "Cardio") count = 1;
       else if (m === "Addominali") count = 2;
       else if (m === "Glutei" && profile.gender === "Femmina") count = 4;
       else if (profile.goal === "Forza") count = 2;
 
-      const compounds = pool.filter((e) => e.isCompound);
-      const isolations = pool.filter((e) => !e.isCompound);
-      const picked = [
-        ...pickN(compounds, Math.min(compounds.length, Math.ceil(count / 2))),
-        ...pickN(isolations, count),
-      ].slice(0, count);
+      const type: Exercise["type"] =
+        m === "Cardio" ? "cardio" : m === "Addominali" ? "core" : "strength";
 
-      picked.forEach((ex) => {
-        const v = volumeFor(profile.goal, ex.type, profile.gender, !!ex.glutePriority);
-        exercises.push({
-          exerciseId: ex.id,
-          name: ex.name,
-          muscle: ex.muscle,
-          sets: v.sets,
-          reps: v.reps,
-          restSec: v.restSec,
-          type: ex.type,
-        });
+      // Try the remote DB first — prefer compound movements for the first half
+      const compoundCount = type === "strength" ? Math.ceil(count / 2) : 0;
+      const dbCompound: DbExercise[] = compoundCount > 0
+        ? pickFromDb(db, { muscle: m, type, count: compoundCount, preferCompound: true, exclude: usedDbIds })
+        : [];
+      dbCompound.forEach((e) => usedDbIds.add(e.id));
+      const dbRest = pickFromDb(db, {
+        muscle: m,
+        type,
+        count: count - dbCompound.length,
+        exclude: usedDbIds,
       });
+      dbRest.forEach((e) => usedDbIds.add(e.id));
+      const dbPicked = [...dbCompound, ...dbRest].slice(0, count);
+
+      if (dbPicked.length > 0) {
+        dbPicked.forEach((ex) => {
+          const glutePriority = m === "Glutei";
+          const v = volumeFor(profile.goal, type, profile.gender, glutePriority);
+          exercises.push({
+            exerciseId: ex.id,
+            name: ex.name,
+            muscle: m,
+            sets: v.sets,
+            reps: v.reps,
+            restSec: v.restSec,
+            type,
+            // Persist ONLY the image paths (max 2). The rest of the DB row stays in memory.
+            images: ex.images.slice(0, 2),
+          });
+        });
+      } else {
+        // Fallback to the bundled local catalog
+        const pool = EXERCISES.filter((e) => e.muscle === m);
+        const compounds = pool.filter((e) => e.isCompound);
+        const isolations = pool.filter((e) => !e.isCompound);
+        const picked = [
+          ...pickN(compounds, Math.min(compounds.length, Math.ceil(count / 2))),
+          ...pickN(isolations, count),
+        ].slice(0, count);
+
+        picked.forEach((ex) => {
+          const v = volumeFor(profile.goal, ex.type, profile.gender, !!ex.glutePriority);
+          exercises.push({
+            exerciseId: ex.id,
+            name: ex.name,
+            muscle: ex.muscle,
+            sets: v.sets,
+            reps: v.reps,
+            restSec: v.restSec,
+            type: ex.type,
+          });
+        });
+      }
     });
 
     return {
