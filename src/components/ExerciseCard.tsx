@@ -1,6 +1,8 @@
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import { useApp } from "@/state/AppContext";
 import type { PlannedExercise } from "@/lib/types";
+import { dbImageUrl } from "@/lib/exerciseDb";
 import { cn } from "@/lib/utils";
 
 type Props = {
