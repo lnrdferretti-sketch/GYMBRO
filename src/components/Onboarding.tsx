@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useApp } from "@/state/AppContext";
-import { DEFAULT_FOCUS } from "@/lib/types";
-import type { Gender, Goal, Profile } from "@/lib/types";
+import { DEFAULT_FOCUS, DAYS_OF_WEEK } from "@/lib/types";
+import type { Gender, Goal, Profile, DayOfWeek } from "@/lib/types";
 import type { MuscleGroup } from "@/lib/exercises";
+import { defaultTrainingDays } from "@/lib/engine";
 import { cn } from "@/lib/utils";
 
 const EMOJIS = ["💪", "🔥", "🏋️", "⚡", "🦾", "🥷", "👑", "🚀", "🎯", "🐺"];
@@ -55,6 +56,21 @@ export function Onboarding() {
   const [goal, setGoal] = useState<Goal | "">("");
   const [days, setDays] = useState<2 | 3 | 4 | 5 | 6 | 0>(0);
   const [focus, setFocus] = useState<Record<MuscleGroup, boolean>>(DEFAULT_FOCUS);
+  const [trainingDays, setTrainingDays] = useState<DayOfWeek[]>([]);
+
+  // Auto-suggest a default day set whenever the day count changes
+  useEffect(() => {
+    if (days === 0) { setTrainingDays([]); return; }
+    setTrainingDays(defaultTrainingDays(days));
+  }, [days]);
+
+  const toggleDay = (d: DayOfWeek) => {
+    setTrainingDays((curr) => {
+      if (curr.includes(d)) return curr.filter((x) => x !== d);
+      if (days !== 0 && curr.length >= days) return curr; // cap at requested count
+      return [...curr, d];
+    });
+  };
 
   // Validation
   const nameOk = coachName.trim().length > 0 && coachName.length <= 15;
