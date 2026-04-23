@@ -13,8 +13,25 @@ export function BenessereTab() {
   const [newWeight, setNewWeight] = useState("");
   const [steps, setSteps] = useState(state.wellness.steps[todayKey()]?.toString() ?? "");
   const [kcal, setKcal] = useState(state.wellness.kcal[todayKey()]?.toString() ?? "");
+  const last7 = useMemo(() => lastNDays(7), []);
 
-  if (!state.profile) return null;
+  const profile = state.profile;
+  const latest = state.wellness.weights[state.wellness.weights.length - 1]?.value
+    ?? profile?.currentWeight ?? 70;
+
+  // Estimate BMR (Mifflin-St Jeor approx)
+  const bmr = useMemo(() => {
+    if (!profile) return 0;
+    const w = latest;
+    const h = 170;
+    const a = profile.age;
+    const base = profile.gender === "Maschio"
+      ? 10 * w + 6.25 * h - 5 * a + 5
+      : 10 * w + 6.25 * h - 5 * a - 161;
+    return Math.round(base);
+  }, [latest, profile]);
+
+  if (!profile) return null;
 
   const water = state.wellness.water[todayKey()] ?? 0;
   const profile = state.profile;
