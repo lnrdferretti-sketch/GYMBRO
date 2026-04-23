@@ -1,18 +1,32 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useApp } from "@/state/AppContext";
 import { BACKGROUND_OPTIONS } from "@/components/PhoneShell";
 import { cn } from "@/lib/utils";
+import { DAYS_OF_WEEK, type DayOfWeek } from "@/lib/types";
+import { defaultTrainingDays } from "@/lib/engine";
 
 const EMOJIS = ["💪", "🔥", "🏋️", "⚡", "🦾", "🥷", "👑", "🚀", "🎯", "🐺"];
+const DAY_OPTIONS = [2, 3, 4, 5, 6] as const;
 
 export function ImpostazioniTab() {
-  const { state, setState, resetAll } = useApp();
+  const { state, setState, resetAll, updateTrainingFrequency } = useApp();
   const fileRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(state.profile?.coachName ?? "GYMBRO");
   const [emoji, setEmoji] = useState(state.profile?.coachEmoji ?? "💪");
-  const [gifJson, setGifJson] = useState(JSON.stringify(state.gifMap, null, 2));
-  const [gifError, setGifError] = useState("");
-  const [gifSaved, setGifSaved] = useState(false);
+
+  // Training frequency editor (local draft, applied on Save)
+  const [draftDpw, setDraftDpw] = useState<2 | 3 | 4 | 5 | 6>(
+    (state.profile?.daysPerWeek ?? 3) as 2 | 3 | 4 | 5 | 6
+  );
+  const [draftDays, setDraftDays] = useState<DayOfWeek[]>(
+    state.profile?.trainingDays ?? defaultTrainingDays(state.profile?.daysPerWeek ?? 3)
+  );
+  const [freqSaved, setFreqSaved] = useState(false);
+
+  // When the user changes the day count, reset draftDays to a sensible preset
+  useEffect(() => {
+    setDraftDays(defaultTrainingDays(draftDpw));
+  }, [draftDpw]);
 
   if (!state.profile) return null;
   const profile = state.profile;
@@ -29,23 +43,25 @@ export function ImpostazioniTab() {
     setState((s) => s.profile ? { ...s, profile: { ...s.profile, background: bg } } : s);
   };
 
-  const saveGifMap = () => {
-    try {
-      const parsed = JSON.parse(gifJson || "{}");
-      if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-        throw new Error("Deve essere un oggetto JSON");
-      }
-      const clean: Record<string, string> = {};
-      Object.entries(parsed).forEach(([k, v]) => {
-        if (typeof v === "string" && v.trim()) clean[k] = v.trim();
-      });
-      setState((s) => ({ ...s, gifMap: clean }));
-      setGifError("");
-      setGifSaved(true);
-      setTimeout(() => setGifSaved(false), 1800);
-    } catch (e) {
-      setGifError(e instanceof Error ? e.message : "JSON non valido");
-    }
+  const toggleDraftDay = (d: DayOfWeek) => {
+    setDraftDays((curr) => {
+      if (curr.includes(d)) return curr.filter((x) => x !== d);
+      if (curr.length >= draftDpw) return curr;
+      return [...curr, d];
+    });
+  };
+
+  const draftDaysOk = draftDays.length === draftDpw;
+  const freqDirty =
+    draftDpw !== profile.daysPerWeek ||
+    JSON.stringify([...draftDays].sort()) !==
+      JSON.stringify([...(profile.trainingDays ?? [])].sort());
+
+  const saveFrequency = () => {
+    if (!draftDaysOk) return;
+    updateTrainingFrequency(draftDpw, draftDays);
+    setFreqSaved(true);
+    setTimeout(() => setFreqSaved(false), 1800);
   };
 
   const exportData = () => {
@@ -111,12 +127,97 @@ export function ImpostazioniTab() {
           disabled={!dirty}
           onClick={saveCoach}
           className={cn(
-            "w-full py-3 rounded-xl font-bold transition-all active:scale-95",
+            "w-full py-3 rounded-xl font-bold transition-all active:scale-95 min-h-[44px]",
             dirty ? "bg-gradient-primary shadow-glow" : "bg-muted text-muted-foreground"
           )}
         >
           Salva
         </button>
+      </div>
+
+      {/* Training frequency editor */}
+      <div className="bg-card/80 border border-border rounded-2xl p-4 shadow-card space-y-3">
+        <div>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">
+            🗓️ Modifica Frequenza Allenamento
+          </p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            Cambia il numero di giorni e quali giorni della settimana ti alleni.
+          </p>
+        </div>
+
+        <div>
+          <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            Giorni a settimana
+          </label>
+          <div className="grid grid-cols-5 gap-2 mt-1">
+            {DAY_OPTIONS.map((d) => (
+              <button
+                key={d}
+                onClick={() => setDraftDpw(d)}
+                className={cn(
+                  "aspect-square rounded-xl text-base font-bold transition-all min-h-[44px]",
+                  draftDpw === d ? "bg-primary shadow-glow" : "bg-secondary/60"
+                )}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            Quali giorni? ({draftDays.length}/{draftDpw})
+          </label>
+          <div className="grid grid-cols-7 gap-1.5 mt-1">
+            {DAYS_OF_WEEK.map((d) => {
+              const on = draftDays.includes(d);
+              const disabled = !on && draftDays.length >= draftDpw;
+              return (
+                <button
+                  key={d}
+                  onClick={() => toggleDraftDay(d)}
+                  disabled={disabled}
+                  className={cn(
+                    "py-3 rounded-xl text-[11px] font-bold transition-all min-h-[44px] flex items-center justify-center",
+                    on
+                      ? "bg-primary shadow-glow"
+                      : disabled
+                        ? "bg-secondary/30 text-muted-foreground opacity-50"
+                        : "bg-secondary/60 active:scale-95"
+                  )}
+                >
+                  {d.slice(0, 3)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {draftDpw !== profile.daysPerWeek && (
+          <p className="text-[11px] text-muted-foreground">
+            ⚠️ Cambiando il numero di giorni, la scheda verrà rigenerata.
+          </p>
+        )}
+
+        <button
+          disabled={!draftDaysOk || !freqDirty}
+          onClick={saveFrequency}
+          className={cn(
+            "w-full py-3 rounded-xl font-bold transition-all active:scale-95 min-h-[44px]",
+            draftDaysOk && freqDirty
+              ? "bg-gradient-primary shadow-glow"
+              : "bg-muted text-muted-foreground"
+          )}
+        >
+          Salva Frequenza
+        </button>
+        {freqSaved && (
+          <p className="text-xs text-center" style={{ color: "var(--success)" }}>
+            ✓ Frequenza aggiornata
+          </p>
+        )}
       </div>
 
       <div className="bg-card/80 border border-border rounded-2xl p-4 shadow-card">
@@ -143,37 +244,12 @@ export function ImpostazioniTab() {
         </div>
       </div>
 
-      {/* GIF JSON */}
-      <div className="bg-card/80 border border-border rounded-2xl p-4 shadow-card space-y-2">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">🎞️ Animazioni GIF</p>
-        <p className="text-xs text-muted-foreground">
-          Inserisci un oggetto JSON che mappa l'ID dell'esercizio (es. <code className="text-electric">"p1"</code>) a un URL GIF.
-        </p>
-        <textarea
-          value={gifJson}
-          onChange={(e) => { setGifJson(e.target.value); setGifError(""); }}
-          rows={6}
-          spellCheck={false}
-          placeholder='{"p1": "https://...gif", "s1": "https://...gif"}'
-          className="w-full bg-input/60 border border-border rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary"
-          style={{ resize: "vertical" }}
-        />
-        {gifError && <p className="text-xs text-primary">{gifError}</p>}
-        {gifSaved && <p className="text-xs text-success" style={{ color: "var(--success)" }}>✓ Salvato</p>}
-        <button
-          onClick={saveGifMap}
-          className="w-full py-2.5 rounded-xl bg-secondary/80 font-semibold active:scale-95 transition-transform text-sm"
-        >
-          Salva Mappa GIF
-        </button>
-      </div>
-
       <div className="bg-card/80 border border-border rounded-2xl p-4 shadow-card space-y-2">
         <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Backup</p>
-        <button onClick={exportData} className="w-full py-3 rounded-xl bg-secondary/80 font-semibold active:scale-95 transition-transform">
+        <button onClick={exportData} className="w-full py-3 rounded-xl bg-secondary/80 font-semibold active:scale-95 transition-transform min-h-[44px]">
           📥 Esporta dati (JSON)
         </button>
-        <button onClick={() => fileRef.current?.click()} className="w-full py-3 rounded-xl bg-secondary/80 font-semibold active:scale-95 transition-transform">
+        <button onClick={() => fileRef.current?.click()} className="w-full py-3 rounded-xl bg-secondary/80 font-semibold active:scale-95 transition-transform min-h-[44px]">
           📤 Importa dati (JSON)
         </button>
         <input
@@ -185,7 +261,7 @@ export function ImpostazioniTab() {
         />
         <button
           onClick={() => { if (confirm("Resettare tutti i dati?")) resetAll(); }}
-          className="w-full py-3 rounded-xl bg-destructive/20 text-destructive font-semibold active:scale-95 transition-transform border border-destructive/40"
+          className="w-full py-3 rounded-xl bg-destructive/20 text-destructive font-semibold active:scale-95 transition-transform border border-destructive/40 min-h-[44px]"
         >
           🗑️ Reset completo
         </button>

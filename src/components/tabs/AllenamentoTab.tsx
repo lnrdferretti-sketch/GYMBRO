@@ -40,6 +40,21 @@ export function AllenamentoTab() {
     });
   };
 
+  const moveExercise = (idx: number, direction: -1 | 1) => {
+    setState((s) => {
+      if (!s.plan) return s;
+      const days = s.plan.days.map((d, i) => {
+        if (i !== active) return d;
+        const next = [...d.exercises];
+        const target = idx + direction;
+        if (target < 0 || target >= next.length) return d;
+        [next[idx], next[target]] = [next[target], next[idx]];
+        return { ...d, exercises: next };
+      });
+      return { ...s, plan: { ...s.plan, days } };
+    });
+  };
+
   const addExerciseFromMuscle = (muscle: MuscleGroup) => {
     const pool = EXERCISES.filter((e) => e.muscle === muscle);
     const ex = pool[Math.floor(Math.random() * pool.length)];
@@ -150,12 +165,16 @@ export function AllenamentoTab() {
 
         {day.exercises.map((ex, i) => (
           <ExerciseCard
-            key={ex.exerciseId + i}
+            key={ex.exerciseId + "-" + i}
             exercise={ex}
             index={i}
             editable={editing}
             onChange={(next) => updateExercise(i, next)}
             onRemove={() => removeExercise(i)}
+            onMoveUp={() => moveExercise(i, -1)}
+            onMoveDown={() => moveExercise(i, 1)}
+            canMoveUp={i > 0}
+            canMoveDown={i < day.exercises.length - 1}
           />
         ))}
 

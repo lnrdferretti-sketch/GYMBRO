@@ -39,7 +39,7 @@ function buildSplit(focus: MuscleGroup[], days: number): MuscleGroup[][] {
   return splits;
 }
 
-function assignDays(n: number): DayOfWeek[] {
+function defaultDays(n: number): DayOfWeek[] {
   // Sensible default: spread across the week with rest days
   const presets: Record<number, DayOfWeek[]> = {
     2: ["Lunedì", "Giovedì"],
@@ -51,6 +51,10 @@ function assignDays(n: number): DayOfWeek[] {
   return presets[n] ?? DAYS_OF_WEEK.slice(0, n);
 }
 
+export function defaultTrainingDays(n: number): DayOfWeek[] {
+  return defaultDays(n);
+}
+
 export function generatePlan(profile: Profile): WeeklyPlan {
   const focus = (Object.entries(profile.focus)
     .filter(([, v]) => v)
@@ -58,7 +62,13 @@ export function generatePlan(profile: Profile): WeeklyPlan {
 
   const safeFocus = focus.length > 0 ? focus : (["Petto", "Schiena", "Gambe"] as MuscleGroup[]);
   const splits = buildSplit(safeFocus, profile.daysPerWeek);
-  const dayAssignments = assignDays(profile.daysPerWeek);
+  const userDays = profile.trainingDays && profile.trainingDays.length === profile.daysPerWeek
+    ? profile.trainingDays
+    : defaultDays(profile.daysPerWeek);
+  // Sort by week order (Lunedì → Domenica) so the schedule reads naturally
+  const dayAssignments = [...userDays].sort(
+    (a, b) => DAYS_OF_WEEK.indexOf(a) - DAYS_OF_WEEK.indexOf(b)
+  );
 
   const days: DayPlan[] = splits.map((muscles, idx) => {
     const exercises: PlannedExercise[] = [];

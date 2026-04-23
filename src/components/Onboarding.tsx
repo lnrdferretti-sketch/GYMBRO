@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useApp } from "@/state/AppContext";
-import { DEFAULT_FOCUS } from "@/lib/types";
-import type { Gender, Goal, Profile } from "@/lib/types";
+import { DEFAULT_FOCUS, DAYS_OF_WEEK } from "@/lib/types";
+import type { Gender, Goal, Profile, DayOfWeek } from "@/lib/types";
 import type { MuscleGroup } from "@/lib/exercises";
+import { defaultTrainingDays } from "@/lib/engine";
 import { cn } from "@/lib/utils";
 
 const EMOJIS = ["💪", "🔥", "🏋️", "⚡", "🦾", "🥷", "👑", "🚀", "🎯", "🐺"];
@@ -55,6 +56,21 @@ export function Onboarding() {
   const [goal, setGoal] = useState<Goal | "">("");
   const [days, setDays] = useState<2 | 3 | 4 | 5 | 6 | 0>(0);
   const [focus, setFocus] = useState<Record<MuscleGroup, boolean>>(DEFAULT_FOCUS);
+  const [trainingDays, setTrainingDays] = useState<DayOfWeek[]>([]);
+
+  // Auto-suggest a default day set whenever the day count changes
+  useEffect(() => {
+    if (days === 0) { setTrainingDays([]); return; }
+    setTrainingDays(defaultTrainingDays(days));
+  }, [days]);
+
+  const toggleDay = (d: DayOfWeek) => {
+    setTrainingDays((curr) => {
+      if (curr.includes(d)) return curr.filter((x) => x !== d);
+      if (days !== 0 && curr.length >= days) return curr; // cap at requested count
+      return [...curr, d];
+    });
+  };
 
   // Validation
   const nameOk = coachName.trim().length > 0 && coachName.length <= 15;
@@ -68,7 +84,8 @@ export function Onboarding() {
 
   const step0Ok = nameOk;
   const step1Ok = !!gender && ageOk && cwOk && twOk && !!goal;
-  const step2Ok = days !== 0 && focusOk;
+  const daysOk = days !== 0 && trainingDays.length === days;
+  const step2Ok = daysOk && focusOk;
 
   const finish = () => {
     if (!step0Ok || !step1Ok || !step2Ok) return;
@@ -81,6 +98,9 @@ export function Onboarding() {
       targetWeight: twNum,
       goal: goal as Goal,
       daysPerWeek: days as 2 | 3 | 4 | 5 | 6,
+      trainingDays: [...trainingDays].sort(
+        (a, b) => DAYS_OF_WEEK.indexOf(a) - DAYS_OF_WEEK.indexOf(b)
+      ),
       focus,
       background: "hero",
     };
@@ -240,6 +260,37 @@ export function Onboarding() {
                   ))}
                 </div>
               </Field>
+
+              {days !== 0 && (
+                <Field
+                  label={`Quali giorni? (${trainingDays.length}/${days})`}
+                  error={!daysOk && trainingDays.length > 0 ? `Seleziona esattamente ${days} giorni` : undefined}
+                >
+                  <div className="grid grid-cols-7 gap-1.5">
+                    {DAYS_OF_WEEK.map((d) => {
+                      const on = trainingDays.includes(d);
+                      const disabled = !on && trainingDays.length >= days;
+                      return (
+                        <button
+                          key={d}
+                          onClick={() => toggleDay(d)}
+                          disabled={disabled}
+                          className={cn(
+                            "py-3 rounded-xl text-[11px] font-bold transition-all min-h-[44px] flex items-center justify-center",
+                            on
+                              ? "bg-primary shadow-glow"
+                              : disabled
+                                ? "bg-secondary/30 text-muted-foreground opacity-50"
+                                : "bg-secondary/60 active:scale-95"
+                          )}
+                        >
+                          {d.slice(0, 3)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </Field>
+              )}
 
               <Field label="Focus muscolare e cardio">
                 <div className="grid grid-cols-2 gap-2">

@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import type { AppState, Profile } from "@/lib/types";
+import type { AppState, Profile, DayOfWeek } from "@/lib/types";
+import { DAYS_OF_WEEK } from "@/lib/types";
 import { initialState, loadState, saveState } from "@/lib/storage";
 import { generatePlan } from "@/lib/engine";
 
@@ -7,6 +8,7 @@ type Ctx = {
   state: AppState;
   setState: (updater: (s: AppState) => AppState) => void;
   setProfile: (p: Profile) => void;
+  updateTrainingFrequency: (daysPerWeek: 2 | 3 | 4 | 5 | 6, trainingDays: DayOfWeek[]) => void;
   regeneratePlan: () => void;
   resetAll: () => void;
 };
@@ -37,11 +39,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setStateRaw((s) => (s.profile ? { ...s, plan: generatePlan(s.profile) } : s));
   };
 
+  const updateTrainingFrequency = (daysPerWeek: 2 | 3 | 4 | 5 | 6, trainingDays: DayOfWeek[]) => {
+    setStateRaw((s) => {
+      if (!s.profile) return s;
+      const sortedDays = [...trainingDays].sort(
+        (a, b) => DAYS_OF_WEEK.indexOf(a) - DAYS_OF_WEEK.indexOf(b)
+      );
+      const nextProfile: Profile = { ...s.profile, daysPerWeek, trainingDays: sortedDays };
+      // If day count changed, the split needs full regen; otherwise just remap assignedDay
+      // to preserve user-edited exercises.
+      if (s.plan && s.plan.days.length === daysPerWeek) {
+        const days = s.plan.days.map((d, i) => ({ ...d, assignedDay: sortedDays[i] }));
+        return { ...s, profile: nextProfile, plan: { ...s.plan, days } };
+      }
+      return { ...s, profile: nextProfile, plan: generatePlan(nextProfile) };
+    });
+  };
+
   const resetAll = () => {
     setStateRaw(initialState);
   };
 
-  const value = useMemo(() => ({ state, setState, setProfile, regeneratePlan, resetAll }), [state]);
+  const value = useMemo(
+    () => ({ state, setState, setProfile, updateTrainingFrequency, regeneratePlan, resetAll }),
+    [state]
+  );
   return <AppCtx.Provider value={value}>{hydrated ? children : null}</AppCtx.Provider>;
 }
 
