@@ -95,13 +95,47 @@ export function ExerciseCard({
             />
           </div>
 
-          {editable && onRemove && (
-            <button
-              onClick={onRemove}
-              className="mt-3 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-1.5 active:scale-95 transition-transform"
-            >
-              🗑️ Rimuovi
-            </button>
+          {(editable || onMoveUp || onMoveDown) && (
+            <div className="mt-3 flex items-center gap-2 flex-wrap">
+              {(onMoveUp || onMoveDown) && (
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={onMoveUp}
+                    disabled={!canMoveUp}
+                    aria-label="Sposta su"
+                    className={cn(
+                      "min-h-[44px] min-w-[44px] rounded-lg text-base font-bold flex items-center justify-center active:scale-95 transition-all",
+                      canMoveUp
+                        ? "bg-secondary/80 text-foreground"
+                        : "bg-secondary/30 text-muted-foreground opacity-50"
+                    )}
+                  >
+                    ↑
+                  </button>
+                  <button
+                    onClick={onMoveDown}
+                    disabled={!canMoveDown}
+                    aria-label="Sposta giù"
+                    className={cn(
+                      "min-h-[44px] min-w-[44px] rounded-lg text-base font-bold flex items-center justify-center active:scale-95 transition-all",
+                      canMoveDown
+                        ? "bg-secondary/80 text-foreground"
+                        : "bg-secondary/30 text-muted-foreground opacity-50"
+                    )}
+                  >
+                    ↓
+                  </button>
+                </div>
+              )}
+              {editable && onRemove && (
+                <button
+                  onClick={onRemove}
+                  className="ml-auto text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-1.5 active:scale-95 transition-transform min-h-[44px]"
+                >
+                  🗑️ Rimuovi
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>
