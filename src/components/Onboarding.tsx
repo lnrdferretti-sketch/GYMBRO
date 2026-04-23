@@ -261,6 +261,37 @@ export function Onboarding() {
                 </div>
               </Field>
 
+              {days !== 0 && (
+                <Field
+                  label={`Quali giorni? (${trainingDays.length}/${days})`}
+                  error={!daysOk && trainingDays.length > 0 ? `Seleziona esattamente ${days} giorni` : undefined}
+                >
+                  <div className="grid grid-cols-7 gap-1.5">
+                    {DAYS_OF_WEEK.map((d) => {
+                      const on = trainingDays.includes(d);
+                      const disabled = !on && trainingDays.length >= days;
+                      return (
+                        <button
+                          key={d}
+                          onClick={() => toggleDay(d)}
+                          disabled={disabled}
+                          className={cn(
+                            "py-3 rounded-xl text-[11px] font-bold transition-all min-h-[44px] flex items-center justify-center",
+                            on
+                              ? "bg-primary shadow-glow"
+                              : disabled
+                                ? "bg-secondary/30 text-muted-foreground opacity-50"
+                                : "bg-secondary/60 active:scale-95"
+                          )}
+                        >
+                          {d.slice(0, 3)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </Field>
+              )}
+
               <Field label="Focus muscolare e cardio">
                 <div className="grid grid-cols-2 gap-2">
                   {MUSCLES.map((m) => {
